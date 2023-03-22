@@ -1,0 +1,177 @@
+---
+title: "Term Project"
+author: "Nina Alinsonorin"
+date: "2023-02-22"
+output: 
+ html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: true
+    theme: journal
+    code_folding: show
+---
+# Executive Summary
+
+This report is geared toward our stakeholder who is in the market for purchasing an entire Airbnb property in the New York area. This stakeholder wants to maximize their gross income from the chosen property. Thus, we have created this report to guide them in the right direction for which specific neighbourhood to begin their search. Our findings indicate that Manhattan, as a neighbourhood group, hosts the Airbnb properties with the highest average price per night. Inside of Manhattan, Harlem Airbnbs have the most reviews per month, indicating that they have the highest frequency of visitors. In the end, we suggest our stakeholder should begin their Airbnb property hunt in Harlem. 
+
+# Report Dependencies
+
+```{r message=FALSE}
+library(tidyverse)
+library(skimr)
+library(pollster)
+library(kableExtra)
+```
+
+# Data Set
+
+We found our dataset on kaggle: [Airbnb NYC Dataset](https://www.kaggle.com/code/dgomonov/data-exploration-on-nyc-airbnb). 
+
+Here is a short dictionary of the data:
+
+<center>
+Variable Name | Description
+---|---
+listing_id | ID of the listing
+name | Name of the listing
+host_id | ID of the host
+host_name | Name of the host
+neighbourhood_group | Location of the listing by boroughs in New York City (Bronx, Brooklyn, Manhattan, Queens, Staten Island)
+neighbourhood | Specific area of the location
+latitude | Latitude coordinates of the listing
+longitude | Longitude coordinates of the listing
+room_type | Type of listing space (Private room, Shared room, Entire home/apt)
+price | Price per night in USD
+</center>
+
+```{r}
+#import dataset
+nyc_data <- read.csv("AB_NYC_2019.csv")
+head(nyc_data)
+```
+
+```{r}
+#Fill empty cells with NA
+nyc_clean <- nyc_data %>%
+  mutate_all( na_if,"")
+```
+
+```{r}
+#Subset the data to only include id, neighbourhood_group, neighbourhood, price, reviews_per_month, number_of_reviews, room_type
+nyc_clean <- nyc_clean %>%
+  select(id,neighbourhood_group,neighbourhood, room_type, price, reviews_per_month, number_of_reviews)
+```
+
+Because our stakeholder is looking to purchase an entire home or apartment, we will first filter our data to match this request.
+
+```{r}
+#filter data to only include room types that are Entire home/apt
+nyc_clean <- nyc_clean %>%
+  filter(room_type == "Entire home/apt")
+```
+
+Next, we find the average price of airbnbs per neighbourhood and round these values to two decimal places. 
+
+```{r}
+
+average_price_n = aggregate(price ~ neighbourhood_group, data = nyc_clean, FUN = mean)
+
+average_price_n$price <- as.double(average_price_n$price)
+
+average_price_n$mean_price <- round(average_price_n$price, digits = 2)
+average_price_n
+```
+
+Because we are only interested in the mean_price column, we delete the price column. 
+
+```{r}
+average_price_n = subset(average_price_n, select=-c(price))
+average_price_n <- average_price_n %>%
+  arrange(desc(mean_price))
+average_price_n
+
+```
+
+
+Because we have now identified Manhattan as the neighbourhood group with the highest average price, we will now subset our data to only include this group. In addition, we are treating the number_of_reviews variable as an indicator of the frequency of stays an airbnb receives. Thus, we sum the number_of_reviews for each specific neighbourhood, within Manhattan, to gain an indication for which attracts the most customers. 
+```{r warning=FALSE}
+
+nyc_clean <- nyc_clean %>%
+  filter(neighbourhood_group == "Manhattan") %>%
+  select(neighbourhood_group, neighbourhood, reviews_per_month, number_of_reviews, price)%>%
+  group_by(neighbourhood)%>%
+  summarise(sum_reviews = sum(number_of_reviews))%>%
+  arrange(desc(sum_reviews))
+nyc_clean
+```
+# Background/Questions
+
+Based on our stakeholder’s interest in purchasing an airbnb property in New York, our efforts were aimed at investigating the trends associated with certain neighbourhoods. Namely, we focused on first, identifying which overall neighbourhood in New York would allow our stakeholder to earn the most gross income. Without knowledge of their purchasing budget or the real estate market, we aimed to suggest a neighbourhood in which customers are paying the highest prices. Second, we narrowed our selection inside the selected larger neighbourhood to identify the smaller neighbourhood with the highest frequency of visits. Thus our questions were:
+
+1. How does the price of a full apartment/house airbnb correspond to its neighbourhood? 
+2. Within the neighbourhood with the highest average price? 
+
+# EDA or Data Descriptives
+
+<center>
+Variable      | Description 
+------------- | ------------- 
+Neighbourhood_group    | a categorical variable that describes whether the airbnb is located in Bronx, Brooklyn, Manhattan, Queens, or Staten Island        
+mean_price        | a numerical data describing the  average price per night in USD of Airbnbs in each neighbourhood group
+Neighbourhood | a categorical variable giving a more precise description of the airbnb’s location inside of a large neighbourhood group
+Sum_reviews | a numeric variable counting the total number of reviews in each specific neighbourhood
+</center>
+
+These are the descriptive statistics for all the major variables we used to create plots:
+```{r}
+skim(nyc_clean)
+skim(average_price_n)
+```
+
+
+
+# Question 1 Plot & Narrative
+## How does the price of a full apartment/house airbnb correlate with its neighborhood?
+
+In order to most accurately portray the average price per neighbourhood group and its distribution, the data within the ***room_type*** variable was extrapolated to solely include full apartment and house Airbnbs. This was done so as to get rid of the externalities and outliers for which the other listing space types would have provided if included; and in doing so, provided information which is easier to digest. Manhattan was found to host the highest, on average, priced Airbnbs at $250/night, followed by Brooklyn at $176/night, and Staten Island at $174/night. It makes logical sense that Manhattan is the most expensive of the other neighbourhood groups as it is located in the heart of the city and where all primary action takes place, while Brooklyn, Staten Island, Queens (at $148/night), and the Bronx (at $126/night) are all located on the outskirts of the city. From this information, we are able to conclude that Manhattan is where the stakeholder should begin their Airbnb search due to the fact that it is directly within New York City. Depending on customers’ desires (in the heart of downtown or on the periphery), Airbnbs within certain neighbourhoods could gain more or less popularity, which is what the following question is geared towards answering.
+
+
+Finally, we create a bar graph using neighbourhood groups and our new mean_price variable. 
+
+```{r}
+airbnb <- "#FF5A5F"
+#order the neighbouhood_group by mean_price from highest to lowest
+ggplot(average_price_n, aes(x=reorder(neighbourhood_group,-mean_price), y=mean_price)) + 
+  geom_col(fill = airbnb)+
+  labs(title = "The Average Price of Airbnbs in Each Neighbourhood Group")+
+  xlab("Neighbourhood Group")+
+  ylab("Average Price")
+```
+
+# Question 2 Plot & Narrative
+## Within Manhattan, what specific neighorhood is the most popular (based on number of reviews per month) and most expensive to stay in? 
+
+Furthermore, this question is more specific than the previous: it looks at certain neighbourhoods within neighbourhood groups, rather than just assessing the neighbourhood groups alone. Popularity, in this case, was equated to the number of monthly reviews a neighbourhood received, with the logic that a greater number of reviews represented a higher frequency of stays. While this does not necessarily account for the fact that an Airbnb may receive the most reviews, and thus greater popularity, due to extreme circumstances (a place could be more likely to garner reviews due to an overly negative factor), we concluded that this still gave a neighbourhood popularity. As a result, Harlem is the most popular neighbourhood to stay within Manhattan. Totaling at 30,870 total reviews per month, this neighbourhood supersedes that of the 31 other Manhattan locales, followed by East Village (at 26,694 monthly reviews), Hell’s Kitchen (at 21,577 monthly reviews), and the Upper East Side (at 19,814). From this information, we are able to conclude that Harlem, located within Manhattan, is where the stakeholder should refine their Airbnb search due its popularity. 
+
+
+Finally, we create a lollipop graph using our new sum_reviews variable created above. 
+
+```{r, fig.width=7,fig.height=16}
+ggplot(nyc_clean, aes(x=reorder(neighbourhood,-sum_reviews), y = sum_reviews)) +
+  geom_segment(aes(x = reorder(neighbourhood,sum_reviews), xend = neighbourhood, y = 0, yend = sum_reviews),
+               color = "gray", lwd = 1) +
+  geom_point(size = 15, colour=airbnb) +
+  geom_text(aes(label = sum_reviews), color = "white", size = 4) +
+  coord_flip() +
+  labs(title="Total Number of Reviews in Each Neighbourhood in Manhattan")+
+  xlab("Total Number of Reviews")+
+  ylab("Neighbourhoods in Manhattan")+
+  theme_minimal()
+```
+
+
+# Summary 
+
+To help our stakeholder decide where to invest in an Airbnb property in New York City, we investigated which neighborhood group could produce the most gross income by comparing the corresponding average price of Airbnbs. Based on the bar graph we created, Manhattan was found to rank the highest for an average price of $250 per night. Therefore, we confined the location of interest to be neighborhoods in Manhattan. Next, we set out to find the most popular neighborhood in Manhattan based on the sum of reviews of all Airbnbs in each neighborhood. Based on our lollipop graph, we determined that Harlem is the most popular neighborhood for previous Airbnb customers. According to our research and data analysis, we can conclude Harlem in Manhattan hosts the Airbnbs with the most popularity and highest average charging price among all neighborhoods in New York City. Therefore, we  recommend our stakeholder to begin the search for Airbnb property investment in Harlem for the maximum expected profit. 
+
+
