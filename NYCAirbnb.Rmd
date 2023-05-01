@@ -10,7 +10,7 @@ output:
     theme: journal
     code_folding: show
 ---
-*[Link to Shiny Dashboard](https://carolwu.shinyapps.io/Final_Project/)
+[Link to Shiny Dashboard](https://carolwu.shinyapps.io/Final_Project/)
 # Executive Summary
 
 This report is geared toward our stakeholder who is in the market for purchasing an entire Airbnb property in the New York area. This stakeholder wants to maximize their gross income from the chosen property. Thus, we have created this report to guide them in the right direction for which specific neighbourhood to begin their search. Our findings indicate that Manhattan, as a neighbourhood group, hosts the Airbnb properties with the highest average price per night. Inside of Manhattan, Harlem Airbnbs have the most reviews per month, indicating that they have the highest frequency of visitors. In the end, we suggest our stakeholder should begin their Airbnb property hunt in Harlem. 
