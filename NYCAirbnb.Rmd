@@ -1,6 +1,6 @@
 ---
 title: "Term Project"
-author: "Nina Alinsonorin"
+author: "Carol Wu, Sabrina Hendricks, Nina Alinsonorin"
 date: "2023-02-22"
 output: 
  html_document:
